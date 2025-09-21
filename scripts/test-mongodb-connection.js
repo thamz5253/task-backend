@@ -5,8 +5,22 @@ const { spawn } = require('child_process');
 async function testMongoDBConnection() {
   console.log('🔍 Testing MongoDB connection...');
   
+  // Try mongosh first, then fallback to mongo
+  let mongoCommand = 'mongosh';
+  let mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+  
+  try {
+    const { execSync } = require('child_process');
+    execSync('which mongosh', { stdio: 'ignore' });
+    console.log('📝 Using mongosh...');
+  } catch (error) {
+    console.log('📝 mongosh not found, trying mongo...');
+    mongoCommand = 'mongo';
+    mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+  }
+  
   return new Promise((resolve, reject) => {
-    const mongoProcess = spawn('mongosh', ['--eval', 'db.adminCommand("ping")'], {
+    const mongoProcess = spawn(mongoCommand, mongoArgs, {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

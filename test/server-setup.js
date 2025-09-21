@@ -37,7 +37,22 @@ class TestServer {
     console.log('🔍 Verifying MongoDB connection...');
     try {
       const { spawn } = require('child_process');
-      const mongoCheck = spawn('mongosh', ['--eval', 'db.adminCommand("ping")'], { 
+      
+      // Try mongosh first, then fallback to mongo
+      let mongoCommand = 'mongosh';
+      let mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+      
+      // Check if mongosh is available, fallback to mongo
+      try {
+        const { execSync } = require('child_process');
+        execSync('which mongosh', { stdio: 'ignore' });
+      } catch (error) {
+        console.log('📝 mongosh not found, trying mongo...');
+        mongoCommand = 'mongo';
+        mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+      }
+      
+      const mongoCheck = spawn(mongoCommand, mongoArgs, { 
         env,
         stdio: ['pipe', 'pipe', 'pipe']
       });

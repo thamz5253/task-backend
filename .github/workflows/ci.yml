@@ -18,7 +18,7 @@ jobs:
         env:
           MONGO_INITDB_DATABASE: task-manager-test
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'"
           --health-interval 5s
           --health-timeout 10s
           --health-retries 20
@@ -39,10 +39,24 @@ jobs:
     - name: Build application
       run: npm run build
 
+    - name: Install mongosh
+      run: |
+        wget -qO - https://pgp.mongodb.com/server-7.0.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-mongosh
+
     - name: Verify MongoDB connection
       run: |
         echo "Verifying MongoDB connection..."
-        mongosh --eval "db.adminCommand('ping')" || (echo "MongoDB connection failed" && exit 1)
+        # Try mongosh first, then fallback to mongo
+        if command -v mongosh &> /dev/null; then
+          mongosh --eval "db.adminCommand('ping')" || (echo "MongoDB connection failed" && exit 1)
+        elif command -v mongo &> /dev/null; then
+          mongo --eval "db.adminCommand('ping')" || (echo "MongoDB connection failed" && exit 1)
+        else
+          echo "Neither mongosh nor mongo found" && exit 1
+        fi
         echo "MongoDB connection successful!"
 
     - name: Run tests
