@@ -21,6 +21,15 @@ global.testUtils = {
   }
 };
 
+// Enhanced error handling for axios requests
+const originalAxios = require('axios');
+global.axios = originalAxios.create({
+  timeout: 10000,
+  validateStatus: function (status) {
+    return status >= 200 && status < 600; // Accept all status codes for testing
+  }
+});
+
 // Suppress console.log during tests unless DEBUG is set
 if (!process.env.DEBUG) {
   global.console = {

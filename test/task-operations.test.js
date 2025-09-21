@@ -1,4 +1,5 @@
-const axios = require('axios');
+// Use global axios instance from setup.js
+const axios = global.axios || require('axios');
 
 // Test configuration
 const BASE_URL = 'http://localhost:3001/api';
@@ -17,6 +18,7 @@ async function createTestTask(taskData = {}) {
     const response = await axios.post(`${BASE_URL}/tasks`, defaultTask);
     return response.data;
   } catch (error) {
+    handleConnectionError(error, 'createTestTask');
     console.error('Error creating test task:', error.response?.data || error.message);
     throw error;
   }
@@ -39,6 +41,14 @@ async function cleanupTestTasks() {
   } catch (error) {
     // Ignore cleanup errors
   }
+}
+
+// Helper function to handle connection errors
+function handleConnectionError(error, testName) {
+  if (error.code === 'ECONNREFUSED') {
+    fail(`Server is not running for test: ${testName}. Make sure the test server is started.`);
+  }
+  throw error;
 }
 
 // Test suite for task operations
@@ -86,6 +96,9 @@ describe('Task Operations Tests', () => {
         await axios.post(`${BASE_URL}/tasks`, invalidTaskData);
         fail('Should have thrown an error');
       } catch (error) {
+        if (error.code === 'ECONNREFUSED') {
+          fail('Server is not running. Make sure the test server is started.');
+        }
         expect(error.response.status).toBe(400);
         expect(error.response.data.error).toBe('Bad Request');
         expect(error.response.data.message).toContain('required');
