@@ -23,6 +23,27 @@ class TestRunner {
       MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/task-manager-test'
     };
 
+    // Verify MongoDB connection before starting server
+    console.log('🔍 Verifying MongoDB connection...');
+    try {
+      const { spawn } = require('child_process');
+      const mongoCheck = spawn('mongosh', ['--eval', 'db.adminCommand("ping")'], { env });
+      
+      await new Promise((resolve, reject) => {
+        mongoCheck.on('close', (code) => {
+          if (code === 0) {
+            console.log('✅ MongoDB connection verified');
+            resolve();
+          } else {
+            reject(new Error(`MongoDB connection failed with code ${code}`));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('❌ MongoDB connection failed:', error.message);
+      throw error;
+    }
+
     // Start the server process
     this.serverProcess = spawn('node', ['dist/index.js'], {
       env,

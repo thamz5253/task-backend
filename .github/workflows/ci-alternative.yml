@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Alternative)
 
 on:
   push:
@@ -10,19 +10,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
-    services:
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-        env:
-          MONGO_INITDB_DATABASE: task-manager-test
-        options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval 5s
-          --health-timeout 10s
-          --health-retries 20
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -39,11 +26,14 @@ jobs:
     - name: Build application
       run: npm run build
 
-    - name: Verify MongoDB connection
+    - name: Start MongoDB
       run: |
-        echo "Verifying MongoDB connection..."
-        mongosh --eval "db.adminCommand('ping')" || (echo "MongoDB connection failed" && exit 1)
-        echo "MongoDB connection successful!"
+        sudo systemctl start mongod || true
+        # Alternative: Start MongoDB using Docker
+        docker run -d --name mongodb-test -p 27017:27017 mongo:7.0
+        # Wait for MongoDB to be ready
+        timeout 60 bash -c 'until mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+        echo "MongoDB is ready!"
 
     - name: Run tests
       run: npm run test:ci
@@ -51,6 +41,12 @@ jobs:
         NODE_ENV: test
         MONGODB_URI: mongodb://localhost:27017/task-manager-test
         DEBUG: true
+
+    - name: Stop MongoDB
+      if: always()
+      run: |
+        docker stop mongodb-test || true
+        docker rm mongodb-test || true
 
     - name: Generate coverage report
       run: npm run test:coverage
@@ -102,4 +98,3 @@ jobs:
       run: |
         echo "Deploying to production..."
         # Add your deployment commands here
-        # For example, using AWS CLI, kubectl, or other deployment tools
