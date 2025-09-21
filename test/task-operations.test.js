@@ -51,6 +51,20 @@ function handleConnectionError(error, testName) {
   throw error;
 }
 
+// Helper function to handle error responses
+function expectErrorResponse(error, expectedStatus, expectedError) {
+  if (error.code === 'ECONNREFUSED') {
+    fail('Server is not running. Make sure the test server is started.');
+  }
+  if (!error.response) {
+    fail(`Expected error response but got: ${error.message}`);
+  }
+  expect(error.response.status).toBe(expectedStatus);
+  if (expectedError) {
+    expect(error.response.data.error).toBe(expectedError);
+  }
+}
+
 // Test suite for task operations
 describe('Task Operations Tests', () => {
   let testTaskId;
@@ -96,11 +110,7 @@ describe('Task Operations Tests', () => {
         await axios.post(`${BASE_URL}/tasks`, invalidTaskData);
         fail('Should have thrown an error');
       } catch (error) {
-        if (error.code === 'ECONNREFUSED') {
-          fail('Server is not running. Make sure the test server is started.');
-        }
-        expect(error.response.status).toBe(400);
-        expect(error.response.data.error).toBe('Bad Request');
+        expectErrorResponse(error, 400, 'Bad Request');
         expect(error.response.data.message).toContain('required');
       }
     }, TEST_TIMEOUT);
@@ -140,8 +150,7 @@ describe('Task Operations Tests', () => {
         });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(404);
-        expect(error.response.data.error).toBe('Not Found');
+        expectErrorResponse(error, 404, 'Not Found');
       }
     }, TEST_TIMEOUT);
 
@@ -154,8 +163,7 @@ describe('Task Operations Tests', () => {
         });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(500);
-        expect(error.response.data.error).toBe('Internal Server Error');
+        expectErrorResponse(error, 500, 'Internal Server Error');
       }
     }, TEST_TIMEOUT);
   });
@@ -216,8 +224,7 @@ describe('Task Operations Tests', () => {
         });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(404);
-        expect(error.response.data.error).toBe('Not Found');
+        expectErrorResponse(error, 404, 'Not Found');
       }
     }, TEST_TIMEOUT);
 
@@ -233,8 +240,7 @@ describe('Task Operations Tests', () => {
         });
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(500);
-        expect(error.response.data.error).toBe('Internal Server Error');
+        expectErrorResponse(error, 500, 'Internal Server Error');
       }
     }, TEST_TIMEOUT);
   });
@@ -254,7 +260,7 @@ describe('Task Operations Tests', () => {
         await axios.get(`${BASE_URL}/tasks/${taskId}`);
         fail('Task should have been deleted');
       } catch (error) {
-        expect(error.response.status).toBe(404);
+        expectErrorResponse(error, 404);
       }
     }, TEST_TIMEOUT);
 
@@ -265,8 +271,7 @@ describe('Task Operations Tests', () => {
         await axios.delete(`${BASE_URL}/tasks/${invalidId}`);
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(404);
-        expect(error.response.data.error).toBe('Not Found');
+        expectErrorResponse(error, 404, 'Not Found');
       }
     }, TEST_TIMEOUT);
 
@@ -277,8 +282,7 @@ describe('Task Operations Tests', () => {
         await axios.delete(`${BASE_URL}/tasks/${malformedId}`);
         fail('Should have thrown an error');
       } catch (error) {
-        expect(error.response.status).toBe(500);
-        expect(error.response.data.error).toBe('Internal Server Error');
+        expectErrorResponse(error, 500, 'Internal Server Error');
       }
     }, TEST_TIMEOUT);
   });

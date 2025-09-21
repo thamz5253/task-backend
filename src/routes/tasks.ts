@@ -256,9 +256,14 @@ export async function markAllTasksCompleted(
   reply: FastifyReply
 ): Promise<void> {
   try {
-    // Simple approach: just return all tasks for now
-    const allTasks = await TaskModel.find().sort({ createdAt: -1 });
-    reply.send(allTasks);
+    const result = await TaskModel.updateMany(
+      { completed: false },
+      { completed: true, updatedAt: new Date().toISOString() }
+    );
+    
+    // Return the updated tasks
+    const updatedTasks = await TaskModel.find().sort({ createdAt: -1 });
+    reply.send(updatedTasks);
   } catch (error) {
     console.error('Error marking all tasks as completed:', error);
     const errorResponse: ErrorResponse = {

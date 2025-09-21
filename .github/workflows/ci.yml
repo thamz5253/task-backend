@@ -51,6 +51,7 @@ jobs:
         NODE_ENV: test
         MONGODB_URI: mongodb://localhost:27017/task-manager-test
         DEBUG: true
+      timeout-minutes: 10
 
     - name: Generate coverage report
       run: npm run test:coverage
