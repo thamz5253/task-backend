@@ -46,10 +46,19 @@ class TestServer {
       try {
         const { execSync } = require('child_process');
         execSync('which mongosh', { stdio: 'ignore' });
+        console.log('📝 Using mongosh for MongoDB connection check');
       } catch (error) {
         console.log('📝 mongosh not found, trying mongo...');
-        mongoCommand = 'mongo';
-        mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+        try {
+          execSync('which mongo', { stdio: 'ignore' });
+          mongoCommand = 'mongo';
+          mongoArgs = ['--eval', 'db.adminCommand("ping")'];
+          console.log('📝 Using mongo for MongoDB connection check');
+        } catch (mongoError) {
+          console.log('⚠️ Neither mongosh nor mongo found, skipping connection check');
+          console.log('📝 Proceeding with server startup - MongoDB connection will be verified by the application');
+          return; // Skip MongoDB connection check
+        }
       }
       
       const mongoCheck = spawn(mongoCommand, mongoArgs, { 
@@ -72,7 +81,8 @@ class TestServer {
       });
     } catch (error) {
       console.error('❌ MongoDB connection failed:', error.message);
-      throw error;
+      console.log('⚠️ Proceeding with server startup - MongoDB connection will be verified by the application');
+      // Don't throw error, let the application handle MongoDB connection
     }
 
     // Start the server process
